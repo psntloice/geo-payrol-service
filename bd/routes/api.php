@@ -11,6 +11,10 @@ Route::group([
     'prefix' => 'v1'
 ], function ($router) {
     Route::post('/login', [AuthController::class, 'index'])->name('login');
-  
+    Route::get('/memo', [AuthController::class, 'memo'])->name('logmemo');
+
 });
+// Route::get('/login', function (Request $request) {
+//     return $request->user();
+// })->middleware('jwt.verify');
 Route::post('me', [AuthController::class, 'me'])->name('log');

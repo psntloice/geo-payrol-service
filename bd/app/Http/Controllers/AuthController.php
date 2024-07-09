@@ -49,4 +49,8 @@ class AuthController extends Controller
     {
         return "beautiful";
     }
+    public function memo()
+    {
+        return "beautiful people";
+    }
 }
