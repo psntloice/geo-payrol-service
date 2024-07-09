@@ -6,12 +6,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Validator;
+use Exception;
 
 class AuthController extends Controller
 {
     public function index(Request $request)
     {
-        dd("index");
         try {
             // Validate incoming request
             $validator = Validator::make($request->all(), [
@@ -35,14 +35,22 @@ class AuthController extends Controller
                 $employeeEmail = $mainobject['employee']['email'];
                 $ownersemail = $request->get('email');
                 $role = $request->get('role');
+                try {
+                    // Your code here
+                } catch (Exception $e) {
+                    Log::error('Error in AuthController@index: ' . $e->getMessage());
+                    return response()->json(['error' => 'Internal Server Error'], 500);
+                }
 
                 return "you won";
                 
             }
-        } catch (ValidationException $e) {
+        } catch (Exception $e) {
             // Log validation errors
-            Log::error('Validation Error', ['errors' => $e->errors()]);
-            return response()->json(['error' => 'Validation failed', 'errors' => $e->errors()], 422);
+            // Log::error('Validation Error', ['errors' => $e->errors()]);
+            // return response()->json(['error' => 'Validation failed', 'errors' => $e->errors()], 422);
+            Log::error('Error in AuthController@index: ' . $e->getMessage());
+            return response()->json(['error' => 'Internal Server Error'], 500);
         }
     }
     public function me(Request $request)
