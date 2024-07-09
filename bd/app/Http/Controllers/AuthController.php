@@ -11,7 +11,7 @@ class AuthController extends Controller
 {
     public function index(Request $request)
     {
-
+        dd("index");
         try {
             // Validate incoming request
             $validator = Validator::make($request->all(), [
@@ -47,10 +47,12 @@ class AuthController extends Controller
     }
     public function me(Request $request)
     {
+        dd("me");
         return "beautiful";
     }
     public function memo()
     {
+        dd("memo");
         return "beautiful people";
     }
 }
