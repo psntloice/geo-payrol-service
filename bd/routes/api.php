@@ -8,7 +8,7 @@ use App\Http\Controllers\AuthController;
 // })->middleware('auth:sanctum');
 Route::group([
     'middleware' => 'jwt.verify',
-    'prefix' => 'auth'
+    'prefix' => 'v1'
 ], function ($router) {
     Route::post('/login', [AuthController::class, 'index'])->name('login');
   
