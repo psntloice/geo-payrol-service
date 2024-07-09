@@ -13,3 +13,4 @@ Route::group([
     Route::post('/login', [AuthController::class, 'index'])->name('login');
   
 });
+Route::post('me', [AuthController::class, 'me'])->name('log');

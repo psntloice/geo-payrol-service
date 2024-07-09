@@ -45,4 +45,8 @@ class AuthController extends Controller
             return response()->json(['error' => 'Validation failed', 'errors' => $e->errors()], 422);
         }
     }
+    public function me(Request $request)
+    {
+        return "beautiful";
+    }
 }
