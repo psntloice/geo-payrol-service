@@ -9,6 +9,8 @@ use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PayPeriodController;
 use App\Http\Controllers\EarningController;
 use App\Http\Controllers\DeductionController;
+use App\Http\Controllers\PayController;
+
 
 Log::info('routes recahed');
 
@@ -18,16 +20,16 @@ Route::group([
     'prefix' => 'v1'
 ], function ($router) {
     Log::info('JWT routes');
-
-    Route::post('/login', [AuthController::class, 'index'])->name('login');
-    Route::get('/memo', [AuthController::class, 'memo'])->name('logmemo');
-
+    // Route::post('/login', [AuthController::class, 'index'])->name('login');
+    // Route::get('/memo', [AuthController::class, 'memo'])->name('logmemo');
     Route::resource('payPeriods', PayPeriodController::class);
     Route::resource('earnings', EarningController::class);
     Route::resource('deductions', DeductionController::class);
     Route::resource('payrolls', PayrollController::class); 
-    // Route::get('/employees', [EmployeeController::class, 'show']);
     Route::resource('employees', EmployeeController::class);
+    Route::resource('payPeriods', PayPeriodController::class);
+    Route::resource('pay', PayController::class);
+
 
 });
 
