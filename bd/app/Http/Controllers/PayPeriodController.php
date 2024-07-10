@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\PayPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Validator;
 
 class PayPeriodController extends Controller
 {
@@ -15,14 +17,26 @@ class PayPeriodController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'payPeriodStart' => 'required|date',
-            'payPeriodEnd' => 'required|date',
-            'paydate' => 'required|date',
+        try {
+            // Validate incoming request
+            $validator = Validator::make($request->all(), [
+                'disbursmentDate' => 'required|date',
 
-        ]);
+            ]);
 
-        return PayPeriod::create($validated);
+            // Check if validation fails
+            if ($validator->fails()) {
+                return response()->json(['error' => $validator->errors()], 400);
+            } else {
+               return PayPeriod::create($validator->validated());
+
+            }
+        } catch (ValidationException $e) {
+            // Log validation errors
+            Log::error('Validation Error', ['errors' => $e->errors()]);
+            return response()->json(['error' => 'Validation failed', 'errors' => $e->errors()], 422);
+        }           
+       
     }
 
     public function show($id)
@@ -36,21 +50,34 @@ class PayPeriodController extends Controller
 
     public function update(Request $request, $id)
     {
-        $payPeriod = PayPeriod::where('payPeriodID', $id)->first();
-        if (!$payPeriod) {
-            return response()->json(['message' => 'not found'], 404);
-        }
-        else{
-        $validated = $request->validate([
-            'payPeriodStart' => 'required|date',
-            'payPeriodEnd' => 'required|date',
-            'paydate' => 'required|date',
-        ]);
+        
+        try {
+            $payPeriod = PayPeriod::where('payPeriodID', $id)->first();
+            if (!$payPeriod) {
+                return response()->json(['message' => 'not found'], 404);
+            }
+            // Validate incoming request
+            $validator = Validator::make($request->all(), [
+                'disbursmentDate' => 'required|date',
 
-        $payPeriod->update($validated);
+             ]);
+ 
+
+            // Check if validation fails
+            if ($validator->fails()) {
+                return response()->json(['error' => $validator->errors()], 400);
+            } else {
+                $payPeriod->update($validator->validated());
 
         return $payPeriod;
-    }
+
+            }
+        } catch (ValidationException $e) {
+            // Log validation errors
+            Log::error('Validation Error', ['errors' => $e->errors()]);
+            return response()->json(['error' => 'Validation failed', 'errors' => $e->errors()], 422);
+        }
+    
     }
 
 

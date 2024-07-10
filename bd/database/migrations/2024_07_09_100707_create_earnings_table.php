@@ -14,14 +14,14 @@ return new class extends Migration
         Schema::create('earnings', function (Blueprint $table) {
             $table->id('earningID');
             $table->string('employeeID');
-            $table->unsignedBigInteger('payPeriodID')->default(0);
+            $table->unsignedBigInteger('payPeriodID')->nullable();
             $table->string('earningType');
             $table->decimal('amount', 10, 2)->default(0);
             $table->timestamps();
 
             // Index and foreign key constraint to reference employees
             // No foreign key constraint because it's across different microservices
-            $table->foreign('payPeriodID')->references('payPeriodID')->on('pay_periods')->onUpdate('cascade')->onDelete('set default');
+            $table->foreign('payPeriodID')->references('payPeriodID')->on('pay_periods')->onUpdate('cascade')->onDelete('set null');
 
         });
     }

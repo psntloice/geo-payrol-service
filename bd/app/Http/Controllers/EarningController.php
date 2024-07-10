@@ -6,6 +6,8 @@ use App\Models\Earning;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Validator;
 
 class EarningController extends Controller
 {
@@ -17,14 +19,29 @@ class EarningController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'payPeriodID' => 'required|integer|exists:pay_periods,payPeriodID',
-            'employeeID' => 'required|integer',
-            'earningType' => 'required|string',
-            'amount' => 'required|numeric',
-        ]);
-        Log::info('Validated data:', $validated);
-        return Earning::create($validated);
+        try {
+            // Validate incoming request
+            $validator = Validator::make($request->all(), [
+                'payPeriodID' => 'required|integer|exists:pay_periods,payPeriodID',
+                'employeeID' => 'required|string',
+                'earningType' => 'required|string',
+                'amount' => 'required|numeric',
+            ]);
+
+            // Check if validation fails
+            if ($validator->fails()) {
+                return response()->json(['error' => $validator->errors()], 400);
+            } else {
+               return Earning::create($validator->validated());
+
+            }
+        } catch (ValidationException $e) {
+            // Log validation errors
+            Log::error('Validation Error', ['errors' => $e->errors()]);
+            return response()->json(['error' => 'Validation failed', 'errors' => $e->errors()], 422);
+        }
+       
+    
     }
 
     public function show($id)
@@ -38,20 +55,34 @@ class EarningController extends Controller
 
     public function update(Request $request, $id)
     {
-        $earning = Earning::where('earningID', $id)->first();
+        
+        try {
+            $earning = Earning::where('earningID', $id)->first();
         if (!$earning) {
             return response()->json(['message' => 'not found'], 404);
         }
-        $validated = $request->validate([
-            'payPeriodID' => 'required|integer|exists:pay_periods,payPeriodID',
-            'employeeID' => 'required|integer',
-            'earningType' => 'required|string',
-            'amount' => 'required|numeric',
-        ]);
+            // Validate incoming request
+            $validator = Validator::make($request->all(), [
+                'payPeriodID' => 'required|integer|exists:pay_periods,payPeriodID',
+                'employeeID' => 'required|string',
+                'earningType' => 'required|string',
+                'amount' => 'required|numeric',
+            ]);
 
-        $earning->update($validated);
+            // Check if validation fails
+            if ($validator->fails()) {
+                return response()->json(['error' => $validator->errors()], 400);
+            } else {
+                $earning->update($validator->validated());
 
         return $earning;
+
+            }
+        } catch (ValidationException $e) {
+            // Log validation errors
+            Log::error('Validation Error', ['errors' => $e->errors()]);
+            return response()->json(['error' => 'Validation failed', 'errors' => $e->errors()], 422);
+        }
     }
 
     public function destroy($id)
