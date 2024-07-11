@@ -122,26 +122,17 @@ class PayController extends Controller
             //pick their deductions
 
             //check advance for specific month
-
-
-
-
-
-
-
-
             $advancesData = [];
             // Loop through each employee in the results array
             foreach ($advanceJsonData['results'] as $employeeAdvance) {
-                // Extract employee id and salary
                 $advanceData = [
                     'employee_id' => $employeeAdvance['employee']['id'],
                     'salary' => $employeeAdvance['employee']['salary'],
+                    'approvalState' => $employeeAdvance['is_approved'],
+                    'advanceDate' => $employeeAdvance['date'],
                 ];
-                // Add data to the array
                 $advancesData[] = $advanceData;
             }
-
 
             //do the maths         
 
@@ -159,8 +150,11 @@ class PayController extends Controller
 
                 // Find advance for the employee
                 foreach ($advancesData as $advanceData) {
+                    $advanceDate = new DateTime($employeeAdvance['date']);
+                    $advanceYear = $advanceDate->format('Y');
+                    $advanceMonth = $advanceDate->format('m');
                     //if advance exists place it as the value
-                    if ($advanceData['employee_id'] === $employeeId) {
+                    if ($advanceData['employee_id'] === $employeeId && $advanceData['approvalState'] && $advanceYear == $currentYear && $advanceMonth == $currentMonth) {
                         $advance += $advanceData['salary'];
                     }
                 }
@@ -187,15 +181,10 @@ class PayController extends Controller
                     'netpay' => $netPay,
                 ];
             }
-            // return [
-            //     'salary data' => $employeesData,
-            //     'advance data' => $advancesData,
-            //     'netpay' => $netPayData,
-            // ];
+         
             //post the data
 
             // Validate incoming request
-            // Define the validation rules
             $rules = [
                 '*.payPeriodID' => 'required|integer|exists:pay_periods,payPeriodID',
                 '*.employeeID' => 'required|string',
@@ -204,8 +193,6 @@ class PayController extends Controller
                 '*.netpay' => 'required|numeric',
             ];
             $validator = Validator::make($netPayData, $rules);
-            // return $validator;
-            // Check if validation fails
             if ($validator->fails()) {
                 $errors = $validator->errors()->all();
                 return response()->json(['payroll validation errors' => $errors], 400);
@@ -230,8 +217,6 @@ class PayController extends Controller
             {
                 return response()->json(['error' => 'notifications for payment data has not been inserted'], 400);
             }
-            // // return $insertedRecords;
-            // return response()->json(['error' => $notificationPayData, 'records' => $insertedRecords]);
 
 
             //make notifications for payment
@@ -288,7 +273,6 @@ class PayController extends Controller
                 if (!$responseData) {
                     $notificationResponses[] = ['error' => 'Failed to send notification', 'statusCode' => $statusCode];
                 }
-
                 $notificationResponses[] = $responseData;
             }
             return response()->json(['message' => 'Data inserted successfully', 'inserted_records' => $insertedRecords, 'notification_records' => $notificationResponses], 200);
