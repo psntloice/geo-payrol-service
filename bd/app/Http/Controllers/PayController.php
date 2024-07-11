@@ -13,6 +13,9 @@ use DOMDocument;
 use DOMXPath;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Client\Response;
+use App\Models\PayPeriod;
+use Carbon\Carbon;
+
 
 class PayController extends Controller
 {
@@ -25,7 +28,35 @@ class PayController extends Controller
     public function store(Request $request)
     {
         try {
-            //call the employees first
+            //pick date of payment
+            $latestPayPeriod = PayPeriod::orderBy('disbursmentDate', 'desc')->first();
+
+            //error if not found
+            if ($latestPayPeriod === null || !isset($latestPayPeriod['disbursmentDate'])) {
+                return "no dates found";
+            }
+
+            // Assuming $latestPayPeriod->disbursmentDate is in "Y-m-d" format
+            $disbursmentDate = Carbon::parse($latestPayPeriod->disbursmentDate);
+
+            // Extract the month
+            $latestMonth = $disbursmentDate->month;
+            $latestYear = $disbursmentDate->year;
+
+            // Get the current date
+            $currentDate = Carbon::now();
+              $currentMonth = $currentDate->month;
+              $currentYear = $currentDate->year;
+
+              
+
+              // Compare the months and years 
+              if ($latestMonth !== $currentMonth || $latestYear !== $currentYear)  {
+                return response()->json(['error' => 'The latest pay period (' . $disbursmentDate->format('Y-m-d') . ') is not for the current month (' . $currentDate->format('Y-m-d') . '): ' . 'Please set the disbursement date',], 404);
+            } 
+           
+         
+            //call the employees 
 
             //check url
             $baseUrl = env('EMPLOYEE_SERVICE_BASE_URL');
@@ -97,13 +128,49 @@ class PayController extends Controller
                 // Add employee data to the array
                 $advancesData[] = $advanceData;
             }
+            // return [
+            //     'salary' => $employeesData,
+            //     'advance' => $advancesData,
+            // ];
+
+            //do the maths         
+
+            //initialize the variables
+            $payPeriodID =$disbursmentDate->format('Y-m-d');
+            $netPayData = [];
+
+            //for each employee in the employee array
+            foreach ($employeesData as $employee) {
+                //take employee id and their salary and place advance value as 0
+                $employeeId = $employee['employee_id'];
+                $salary = $employee['salary'];
+                $advance = 0; // Default advance
+
+                // Find advance for the employee
+                foreach ($advancesData as $advanceData) {
+                    //if advance exists place it as the value
+                    if ($advanceData['employee_id'] === $employeeId) {
+                        $advance += $advanceData['salary'];
+                    }
+                }
+                // Calculate net pay
+                $netPay = $salary - ($advance ?: 0);
+
+                // Add net pay data to the array
+                $netPayData[] = [
+                    'payPeriodID' => $payPeriodID,
+                    'employeeID' => $employeeId,
+                    'totalEarnings' => $employee['salary'],
+                    'totalDeductions' => $advance,
+                    'netpay' => $netPay,
+                ];
+            }
+
             return [
-                'salary' => $employeesData,
-                'advance' => $advancesData,
+                'salary data' => $employeesData,
+                'advance data' => $advancesData,
+                'netpay' => $netPayData,
             ];
-
-            //do the maths
-
             //post the data
 
             // Validate incoming request
@@ -182,3 +249,14 @@ class PayController extends Controller
         return response()->json(['message' => 'deleted successfully']);;
     }
 }
+ 
+
+//you can aggregate advances
+// $totalAdvances = [];
+// foreach ($advancesData as $advance) {
+//     $employeeId = $advance['employee_id'];
+//     if (!isset($totalAdvances[$employeeId])) {
+//         $totalAdvances[$employeeId] = 0;
+//     }
+//     $totalAdvances[$employeeId] += $advance['amount'];
+// }

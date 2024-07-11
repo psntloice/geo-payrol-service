@@ -14,7 +14,7 @@ class PayPeriod extends Model
     protected $fillable = [
         'disbursmentDate',
     ];
-
+    protected $dates = ['disbursmentDate'];
     // If you need timestamps, keep this line
     public $timestamps = true;
     public function payrolls()
