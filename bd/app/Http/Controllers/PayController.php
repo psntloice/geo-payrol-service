@@ -96,6 +96,8 @@ class PayController extends Controller
                 $employeeData = [
                     'employee_id' => $employee['id'],
                     'salary' => $employee['salary'],
+                    'email' => $employee['email'],
+
                 ];
                 // Add employee data to the array
                 $employeesData[] = $employeeData;
@@ -146,11 +148,12 @@ class PayController extends Controller
             //initialize the variables
             $payPeriodID = $latestPayPeriodId;
             $netPayData = [];
-
+            $notificationPayData = [];
             //for each employee in the employee array calculate netpay
             foreach ($employeesData as $employee) {
                 //take employee id and their salary and place advance value as 0
                 $employeeId = $employee['employee_id'];
+                $employeeEmail = $employee['email'];
                 $salary = $employee['salary'];
                 $advance = 0; // Default advance
 
@@ -164,7 +167,7 @@ class PayController extends Controller
                 // Calculate net pay
                 $netPay = $salary - ($advance ?: 0);
 
-                // Add net pay data to the array
+                // Add net pay data to the array for insertion to payment table
                 $netPayData[] = [
                     'payPeriodID' => $payPeriodID,
                     'employeeID' => $employeeId,
@@ -172,8 +175,18 @@ class PayController extends Controller
                     'totalDeductions' => $advance,
                     'netpay' => $netPay,
                 ];
+                // Add net pay data to the array for insertion to notification table
+                $notificationPayData[] = [
+                    'payPeriodID' => $payPeriodID,
+                    'employeeID' => [
+                        'id' => $employeeId,
+                        'email' => $employeeEmail,
+                    ],
+                    'totalEarnings' => floatval($employee['salary']),
+                    'totalDeductions' => $advance,
+                    'netpay' => $netPay,
+                ];
             }
-            // return $netPayData;
             // return [
             //     'salary data' => $employeesData,
             //     'advance data' => $advancesData,
@@ -213,7 +226,12 @@ class PayController extends Controller
             if (!$insertedRecords) {
                 return response()->json(['error' => 'payment data has not been inserted'], 400);
             }
-            // return $insertedRecords;
+            if (!$notificationPayData)
+            {
+                return response()->json(['error' => 'notifications for payment data has not been inserted'], 400);
+            }
+            // // return $insertedRecords;
+            // return response()->json(['error' => $notificationPayData, 'records' => $insertedRecords]);
 
 
             //make notifications for payment
@@ -240,13 +258,10 @@ class PayController extends Controller
 
             //insert that data to the notifications table each by each and store all the responses
             $notificationResponses = [];
-            foreach ($insertedRecords as $notifcreate) {
-                // Prepare data to send
-                $dataToSend = $notifcreate->toArray();
-                unset($dataToSend['created_at']);
-                unset($dataToSend['updated_at']);
-
-                $objectBody = $dataToSend;
+            foreach ($notificationPayData as $notifcreate) {
+                Log::info($notifcreate);
+                // Prepare data to send              
+                $objectBody = $notifcreate;
 
                 // Validate data
                 if (!isset($paymentMessage) || !isset($objectBody) || !isset($type)) {
