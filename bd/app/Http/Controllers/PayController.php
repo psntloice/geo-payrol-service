@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Client\Response;
 use App\Models\PayPeriod;
 use Carbon\Carbon;
+use DateTime;
 
 
 class PayController extends Controller
@@ -172,7 +173,7 @@ class PayController extends Controller
                     'netpay' => $netPay,
                 ];
             }
-// return $netPayData;
+            // return $netPayData;
             // return [
             //     'salary data' => $employeesData,
             //     'advance data' => $advancesData,
@@ -184,7 +185,7 @@ class PayController extends Controller
             // Define the validation rules
             $rules = [
                 '*.payPeriodID' => 'required|integer|exists:pay_periods,payPeriodID',
-                 '*.employeeID' => 'required|string',
+                '*.employeeID' => 'required|string',
                 '*.totalEarnings' => 'required|numeric',
                 '*.totalDeductions' => 'required|numeric',
                 '*.netpay' => 'required|numeric',
@@ -195,23 +196,87 @@ class PayController extends Controller
             if ($validator->fails()) {
                 $errors = $validator->errors()->all();
                 return response()->json(['payroll validation errors' => $errors], 400);
-            } else {
-                $insertedRecords = [];
+            }
 
-                foreach ($netPayData as $data) {
-                    $insertedRecord = Payroll::create([
-                        'payPeriodID' => $data['payPeriodID'],
-                        'employeeID' => $data['employeeID'],
-                        'totalEarnings' => $data['totalEarnings'],
-                        'totalDeductions' => $data['totalDeductions'],
-                        'netpay' => $data['netpay'],
-                    ]);
-            
-                    // Optionally, you can add the inserted record to the response array
-                    $insertedRecords[] = $insertedRecord;
+            //create payment
+            $insertedRecords = [];
+            foreach ($netPayData as $data) {
+                $insertedRecord = Payroll::create([
+                    'payPeriodID' => $data['payPeriodID'],
+                    'employeeID' => $data['employeeID'],
+                    'totalEarnings' => $data['totalEarnings'],
+                    'totalDeductions' => $data['totalDeductions'],
+                    'netpay' => $data['netpay'],
+                ]);
+                $insertedRecords[] = $insertedRecord;
+            }
+            if (!$insertedRecords) {
+                return response()->json(['error' => 'payment data has not been inserted'], 400);
+            }
+            // return $insertedRecords;
+
+
+            //make notifications for payment
+
+            //takes care of url
+            $baseUrl = env('NOTIFICATION_SERVICE_BASE_URL');
+            $baseUrlString = (string) $baseUrl;
+
+            //takes care of the token *********************************should have try and catch
+            $tokn = JWTAuth::getToken();
+            if (!$tokn) {
+                return response()->json(['error' => 'Token not provided'], 400);
+            }
+            $tokenString = (string) $tokn;
+
+            //connects to the external service
+            $client = new Client();
+            Log::info('Request URL: ' . $baseUrlString);
+
+            //set data to be sent to  external service
+            $monthName = $disbursmentDate->monthName;
+            $paymentMessage = "Payment for $monthName $latestYear Disbursed";
+            $type = 'payment';
+
+            //insert that data to the notifications table each by each and store all the responses
+            $notificationResponses = [];
+            foreach ($insertedRecords as $notifcreate) {
+                // Prepare data to send
+                $dataToSend = $notifcreate->toArray();
+                unset($dataToSend['created_at']);
+                unset($dataToSend['updated_at']);
+
+                $objectBody = $dataToSend;
+
+                // Validate data
+                if (!isset($paymentMessage) || !isset($objectBody) || !isset($type)) {
+                    return response()->json(['error' => 'No data for notification provided'], 400);
                 }
-                // return "did it";
-                return response()->json(['message' => 'Data inserted successfully', 'inserted_records' => $insertedRecords], 200);            }
+
+                // Send notification
+                $response = $client->request('POST', $baseUrlString . '/notifications/', [
+                    'headers' => [
+                        'Authorization' => 'Bearer ' . $tokenString,
+                        'Accept' => 'application/json',
+                    ],
+                    'json' => [
+                        'message' => $paymentMessage,
+                        'type' => $type,
+                        'payload' => $objectBody,
+                    ],
+                ]);
+
+                // Handle response as needed
+                $statusCode = $response->getStatusCode();
+                $responseData = json_decode($response->getBody(), true); // Assuming the response is JSON
+
+                if (!$responseData) {
+                    $notificationResponses[] = ['error' => 'Failed to send notification', 'statusCode' => $statusCode];
+                }
+
+                $notificationResponses[] = $responseData;
+            }
+            return response()->json(['message' => 'Data inserted successfully', 'inserted_records' => $insertedRecords, 'notification_records' => $notificationResponses], 200);
         } catch (\Exception $e) {
             Log::error('Exception caught', ['payroll creation exception' => $e]);
             return response()->json(['error' => 'An unexpected error occurred when creating a payroll'], 500);
