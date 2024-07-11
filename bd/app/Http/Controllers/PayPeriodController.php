@@ -9,6 +9,7 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Validator;
 use GuzzleHttp\Client;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Str;
 use PHPOpenSourceSaver\JWTAuth\Exceptions\TokenExpiredException;
 use PHPOpenSourceSaver\JWTAuth\Exceptions\TokenInvalidException;
 use PHPOpenSourceSaver\JWTAuth\Exceptions\JWTException;
@@ -38,7 +39,6 @@ class PayPeriodController extends Controller
             $paycreate = PayPeriod::create([
                 'disbursmentDate' => $disbursmentDate,
             ]);
-            // $paycreate = PayPeriod::create($validator->validated());
             if ($paycreate) {
 
                 //takes care of url
@@ -144,17 +144,14 @@ class PayPeriodController extends Controller
 
             ]);
 
-
             // Check if validation fails
             if ($validator->fails()) {
                 return response()->json(['error' => $validator->errors()], 400);
             } else {
                 $payPeriod->update($validator->validated());
-
                 return $payPeriod;
             }
         } catch (ValidationException $e) {
-            // Log validation errors
             Log::error('Validation Error', ['errors' => $e->errors()]);
             return response()->json(['error' => 'Validation failed', 'errors' => $e->errors()], 422);
         }

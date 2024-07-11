@@ -181,12 +181,12 @@ class PayController extends Controller
                     'netpay' => $netPay,
                 ];
             }
-         
+
             //post the data
 
             // Validate incoming request
             $rules = [
-                '*.payPeriodID' => 'required|integer|exists:pay_periods,payPeriodID',
+                '*.payPeriodID' => 'required|string|exists:pay_periods,payPeriodID',
                 '*.employeeID' => 'required|string',
                 '*.totalEarnings' => 'required|numeric',
                 '*.totalDeductions' => 'required|numeric',
@@ -213,8 +213,7 @@ class PayController extends Controller
             if (!$insertedRecords) {
                 return response()->json(['error' => 'payment data has not been inserted'], 400);
             }
-            if (!$notificationPayData)
-            {
+            if (!$notificationPayData) {
                 return response()->json(['error' => 'notifications for payment data has not been inserted'], 400);
             }
 
@@ -300,7 +299,7 @@ class PayController extends Controller
             }
             // Validate incoming request
             $validator = Validator::make($request->all(), [
-                'payPeriodID' => 'required|integer|exists:pay_periods,payPeriodID',
+                'payPeriodID' => 'required|string|exists:pay_periods,payPeriodID',
                 'employeeID' => 'required|string',
                 'amount' => 'required|numeric',
                 'totalEarnings' => 'required|numeric',

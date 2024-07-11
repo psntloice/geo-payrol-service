@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('pay_periods', function (Blueprint $table) {
-            $table->id('payPeriodID');        
+            $table->uuid('payPeriodID')->primary();
             $table->date('disbursmentDate');
             $table->timestamps();
         });

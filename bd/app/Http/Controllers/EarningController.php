@@ -12,9 +12,8 @@ use Illuminate\Support\Facades\Validator;
 class EarningController extends Controller
 {
     public function index()
-    {       
-        return Earning::all();  
-
+    {
+        return Earning::all();
     }
 
     public function store(Request $request)
@@ -22,7 +21,7 @@ class EarningController extends Controller
         try {
             // Validate incoming request
             $validator = Validator::make($request->all(), [
-                'payPeriodID' => 'required|integer|exists:pay_periods,payPeriodID',
+                'payPeriodID' => 'required|string|exists:pay_periods,payPeriodID',
                 'employeeID' => 'required|string',
                 'earningType' => 'required|string',
                 'amount' => 'required|numeric',
@@ -32,16 +31,13 @@ class EarningController extends Controller
             if ($validator->fails()) {
                 return response()->json(['error' => $validator->errors()], 400);
             } else {
-               return Earning::create($validator->validated());
-
+                return Earning::create($validator->validated());
             }
         } catch (ValidationException $e) {
             // Log validation errors
             Log::error('Validation Error', ['errors' => $e->errors()]);
             return response()->json(['error' => 'Validation failed', 'errors' => $e->errors()], 422);
         }
-       
-    
     }
 
     public function show($id)
@@ -55,15 +51,15 @@ class EarningController extends Controller
 
     public function update(Request $request, $id)
     {
-        
+
         try {
             $earning = Earning::where('earningID', $id)->first();
-        if (!$earning) {
-            return response()->json(['message' => 'not found'], 404);
-        }
+            if (!$earning) {
+                return response()->json(['message' => 'not found'], 404);
+            }
             // Validate incoming request
             $validator = Validator::make($request->all(), [
-                'payPeriodID' => 'required|integer|exists:pay_periods,payPeriodID',
+                'payPeriodID' => 'required|string|exists:pay_periods,payPeriodID',
                 'employeeID' => 'required|string',
                 'earningType' => 'required|string',
                 'amount' => 'required|numeric',
@@ -75,8 +71,7 @@ class EarningController extends Controller
             } else {
                 $earning->update($validator->validated());
 
-        return $earning;
-
+                return $earning;
             }
         } catch (ValidationException $e) {
             // Log validation errors

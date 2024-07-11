@@ -17,11 +17,11 @@ class DeductionController extends Controller
 
     public function store(Request $request)
     {
-       
+
         try {
             // Validate incoming request
             $validator = Validator::make($request->all(), [
-                'payPeriodID' => 'required|integer|exists:pay_periods,payPeriodID',
+                'payPeriodID' => 'required|string|exists:pay_periods,payPeriodID',
                 'employeeID' => 'required|string',
                 'deductionType' => 'required|string',
                 'amount' => 'required|numeric',
@@ -31,15 +31,13 @@ class DeductionController extends Controller
             if ($validator->fails()) {
                 return response()->json(['error' => $validator->errors()], 400);
             } else {
-               return Deduction::create($validator->validated());
-
+                return Deduction::create($validator->validated());
             }
         } catch (ValidationException $e) {
             // Log validation errors
             Log::error('Validation Error', ['errors' => $e->errors()]);
             return response()->json(['error' => 'Validation failed', 'errors' => $e->errors()], 422);
         }
-    
     }
 
     public function show($id)
@@ -53,7 +51,7 @@ class DeductionController extends Controller
 
     public function update(Request $request, $id)
     {
-            
+
         try {
             $deduction = Deduction::where('deductionID', $id)->first();
             if (!$deduction) {
@@ -61,7 +59,7 @@ class DeductionController extends Controller
             }
             // Validate incoming request
             $validator = Validator::make($request->all(), [
-                'payPeriodID' => 'required|integer|exists:pay_periods,payPeriodID',
+                'payPeriodID' => 'required|string|exists:pay_periods,payPeriodID',
                 'employeeID' => 'required|string',
                 'deductionType' => 'required|string',
                 'amount' => 'required|numeric',
@@ -74,14 +72,12 @@ class DeductionController extends Controller
                 $deduction->update($validator->validated());
 
                 return $deduction;
-
             }
         } catch (ValidationException $e) {
             // Log validation errors
             Log::error('Validation Error', ['errors' => $e->errors()]);
             return response()->json(['error' => 'Validation failed', 'errors' => $e->errors()], 422);
         }
-
     }
 
     public function destroy($id)

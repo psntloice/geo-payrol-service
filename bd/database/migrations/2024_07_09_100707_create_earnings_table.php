@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('earnings', function (Blueprint $table) {
-            $table->id('earningID');
+            $table->uuid('earningID')->primary();
             $table->string('employeeID');
-            $table->unsignedBigInteger('payPeriodID')->nullable();
+            $table->uuid('payPeriodID')->nullable();
             $table->string('earningType');
             $table->decimal('amount', 10, 2)->default(0);
             $table->timestamps();

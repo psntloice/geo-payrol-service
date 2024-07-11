@@ -13,8 +13,7 @@ class PayrollController extends Controller
     public function index()
     {
         // return Payroll::with('employee')->get();
-       return Payroll::all();
-
+        return Payroll::all();
     }
 
     public function store(Request $request)
@@ -22,9 +21,8 @@ class PayrollController extends Controller
         try {
             // Validate incoming request
             $validator = Validator::make($request->all(), [
-               'payPeriodID' => 'required|integer|exists:pay_periods,payPeriodID',
+                'payPeriodID' => 'required|string|exists:pay_periods,payPeriodID',
                 'employeeID' => 'required|string',
-                     'amount' => 'required|numeric',
                 'totalEarnings' => 'required|numeric',
                 'totalDeductions' => 'required|numeric',
                 'netpay' => 'required|numeric',
@@ -34,16 +32,13 @@ class PayrollController extends Controller
             if ($validator->fails()) {
                 return response()->json(['error' => $validator->errors()], 400);
             } else {
-               return Payroll::create($validator->validated());
-
+                return Payroll::create($validator->validated());
             }
         } catch (ValidationException $e) {
             // Log validation errors
             Log::error('Validation Error', ['errors' => $e->errors()]);
             return response()->json(['error' => 'Validation failed', 'errors' => $e->errors()], 422);
         }
-               
-
     }
 
     public function show($id)
@@ -53,7 +48,6 @@ class PayrollController extends Controller
             return response()->json(['message' => 'not found'], 404);
         }
         return $payroll;
-        // return $payroll->load('employee');
     }
     public function showPayrollSpecificEmployee(Payroll $payroll)
     {
@@ -72,18 +66,17 @@ class PayrollController extends Controller
         try {
             $payroll = Payroll::where('id', $id)->first();
             if (!$payroll) {
-            return response()->json(['message' => 'not found'], 404);
-        }
+                return response()->json(['message' => 'not found'], 404);
+            }
             // Validate incoming request
             $validator = Validator::make($request->all(), [
-                'payPeriodID' => 'required|integer|exists:pay_periods,payPeriodID',
-                 'employeeID' => 'required|string',
-                      'amount' => 'required|numeric',
-                 'totalEarnings' => 'required|numeric',
-                 'totalDeductions' => 'required|numeric',
-                 'netpay' => 'required|numeric',
-             ]);
- 
+                'payPeriodID' => 'required|string|exists:pay_periods,payPeriodID',
+                'employeeID' => 'required|string',
+                'totalEarnings' => 'required|numeric',
+                'totalDeductions' => 'required|numeric',
+                'netpay' => 'required|numeric',
+            ]);
+
 
             // Check if validation fails
             if ($validator->fails()) {
@@ -91,15 +84,13 @@ class PayrollController extends Controller
             } else {
                 $payroll->update($validator->validated());
 
-        return $payroll;
-
+                return $payroll;
             }
         } catch (ValidationException $e) {
             // Log validation errors
             Log::error('Validation Error', ['errors' => $e->errors()]);
             return response()->json(['error' => 'Validation failed', 'errors' => $e->errors()], 422);
         }
-       
     }
     // public function destroy(Payroll $payroll)
 

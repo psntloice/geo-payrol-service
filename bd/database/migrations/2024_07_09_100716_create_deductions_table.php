@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('deductions', function (Blueprint $table) {
-            $table->id('deductionID');
+            $table->uuid('deductionID')->primary();
             $table->string('employeeID');
-            $table->unsignedBigInteger('payPeriodID')->nullable();
+            $table->uuid('payPeriodID')->nullable();
             $table->string('deductionType');
             $table->decimal('amount', 10, 2)->default(0);
             $table->timestamps();

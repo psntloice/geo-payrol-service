@@ -13,9 +13,9 @@ return new class extends Migration
     {
 
         Schema::create('payroll', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('employeeID');
-            $table->unsignedBigInteger('payPeriodID')->nullable();
+            $table->uuid('payPeriodID')->nullable();
             $table->decimal('totalEarnings', 10, 2)->default(0);
             $table->decimal('totalDeductions', 10, 2)->default(0);
             $table->decimal('netpay', 10, 2)->default(0);
