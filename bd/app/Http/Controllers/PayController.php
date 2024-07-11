@@ -45,17 +45,22 @@ class PayController extends Controller
 
             // Get the current date
             $currentDate = Carbon::now();
-              $currentMonth = $currentDate->month;
-              $currentYear = $currentDate->year;
+            $currentMonth = $currentDate->month;
+            $currentYear = $currentDate->year;
 
-              
 
-              // Compare the months and years 
-              if ($latestMonth !== $currentMonth || $latestYear !== $currentYear)  {
+
+            // Compare the months and years 
+            if ($latestMonth !== $currentMonth || $latestYear !== $currentYear) {
                 return response()->json(['error' => 'The latest pay period (' . $disbursmentDate->format('Y-m-d') . ') is not for the current month (' . $currentDate->format('Y-m-d') . '): ' . 'Please set the disbursement date',], 404);
-            } 
-           
-         
+            }
+
+            // If comparison is successful, proceed to fetch the ID
+            $latestPayPeriodId = $latestPayPeriod->payPeriodID;
+            if ($latestPayPeriodId === null || !isset($latestPayPeriod['disbursmentDate'])) {
+                return "no id for the date found";
+            }
+
             //call the employees 
 
             //check url
@@ -82,8 +87,6 @@ class PayController extends Controller
                 return response()->json(['error' => 'Failed to fetch employee salary data'], 404);
             }
 
-
-
             //pick their earnings 
             $employeesData = [];
             // Loop through each employee in the results array
@@ -93,10 +96,11 @@ class PayController extends Controller
                     'employee_id' => $employee['id'],
                     'salary' => $employee['salary'],
                 ];
-
                 // Add employee data to the array
                 $employeesData[] = $employeeData;
             }
+
+
 
 
             //connect with external employee check for advance 
@@ -112,9 +116,16 @@ class PayController extends Controller
                 return response()->json(['error' => 'Failed to fetch employee advance data'], 404);
             }
 
-
-
             //pick their deductions
+
+            //check advance for specific month
+
+
+
+
+
+
+
 
             $advancesData = [];
             // Loop through each employee in the results array
@@ -124,22 +135,18 @@ class PayController extends Controller
                     'employee_id' => $employeeAdvance['employee']['id'],
                     'salary' => $employeeAdvance['employee']['salary'],
                 ];
-
-                // Add employee data to the array
+                // Add data to the array
                 $advancesData[] = $advanceData;
             }
-            // return [
-            //     'salary' => $employeesData,
-            //     'advance' => $advancesData,
-            // ];
+
 
             //do the maths         
 
             //initialize the variables
-            $payPeriodID =$disbursmentDate->format('Y-m-d');
+            $payPeriodID = $latestPayPeriodId;
             $netPayData = [];
 
-            //for each employee in the employee array
+            //for each employee in the employee array calculate netpay
             foreach ($employeesData as $employee) {
                 //take employee id and their salary and place advance value as 0
                 $employeeId = $employee['employee_id'];
@@ -160,40 +167,54 @@ class PayController extends Controller
                 $netPayData[] = [
                     'payPeriodID' => $payPeriodID,
                     'employeeID' => $employeeId,
-                    'totalEarnings' => $employee['salary'],
+                    'totalEarnings' => floatval($employee['salary']),
                     'totalDeductions' => $advance,
                     'netpay' => $netPay,
                 ];
             }
-
-            return [
-                'salary data' => $employeesData,
-                'advance data' => $advancesData,
-                'netpay' => $netPayData,
-            ];
+// return $netPayData;
+            // return [
+            //     'salary data' => $employeesData,
+            //     'advance data' => $advancesData,
+            //     'netpay' => $netPayData,
+            // ];
             //post the data
 
             // Validate incoming request
-            // $validator = Validator::make($request->all(), [
-            //    'payPeriodID' => 'required|integer|exists:pay_periods,payPeriodID',
-            //     'employeeID' => 'required|string',
-            //          'amount' => 'required|numeric',
-            //     'totalEarnings' => 'required|numeric',
-            //     'totalDeductions' => 'required|numeric',
-            //     'netpay' => 'required|numeric',
-            // ]);
+            // Define the validation rules
+            $rules = [
+                '*.payPeriodID' => 'required|integer|exists:pay_periods,payPeriodID',
+                 '*.employeeID' => 'required|string',
+                '*.totalEarnings' => 'required|numeric',
+                '*.totalDeductions' => 'required|numeric',
+                '*.netpay' => 'required|numeric',
+            ];
+            $validator = Validator::make($netPayData, $rules);
+            // return $validator;
+            // Check if validation fails
+            if ($validator->fails()) {
+                $errors = $validator->errors()->all();
+                return response()->json(['payroll validation errors' => $errors], 400);
+            } else {
+                $insertedRecords = [];
 
-            // // Check if validation fails
-            // if ($validator->fails()) {
-            //     return response()->json(['error' => $validator->errors()], 400);
-            // } else {
-            //    return Payroll::create($validator->validated());
-
-            // }
-        } catch (ValidationException $e) {
-            // Log validation errors
-            Log::error('Validation Error', ['errors' => $e->errors()]);
-            return response()->json(['error' => 'Validation failed', 'errors' => $e->errors()], 422);
+                foreach ($netPayData as $data) {
+                    $insertedRecord = Payroll::create([
+                        'payPeriodID' => $data['payPeriodID'],
+                        'employeeID' => $data['employeeID'],
+                        'totalEarnings' => $data['totalEarnings'],
+                        'totalDeductions' => $data['totalDeductions'],
+                        'netpay' => $data['netpay'],
+                    ]);
+            
+                    // Optionally, you can add the inserted record to the response array
+                    $insertedRecords[] = $insertedRecord;
+                }
+                // return "did it";
+                return response()->json(['message' => 'Data inserted successfully', 'inserted_records' => $insertedRecords], 200);            }
+        } catch (\Exception $e) {
+            Log::error('Exception caught', ['payroll creation exception' => $e]);
+            return response()->json(['error' => 'An unexpected error occurred when creating a payroll'], 500);
         }
     }
 
