@@ -178,7 +178,7 @@ class PayController extends Controller
                 // Add net pay data to the array for insertion to notification table
                 $notificationPayData[] = [
                     'payPeriodID' => $payPeriodID,
-                    'employeeID' => [
+                    'employee' => [
                         'id' => $employeeId,
                         'email' => $employeeEmail,
                     ],
