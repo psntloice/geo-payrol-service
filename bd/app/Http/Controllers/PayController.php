@@ -292,35 +292,8 @@ class PayController extends Controller
 
     public function update(Request $request, $id)
     {
-        try {
-            $payroll = Payroll::where('id', $id)->first();
-            if (!$payroll) {
-                return response()->json(['message' => 'not found'], 404);
-            }
-            // Validate incoming request
-            $validator = Validator::make($request->all(), [
-                'payPeriodID' => 'required|string|exists:pay_periods,payPeriodID',
-                'employeeID' => 'required|string',
-                'amount' => 'required|numeric',
-                'totalEarnings' => 'required|numeric',
-                'totalDeductions' => 'required|numeric',
-                'netpay' => 'required|numeric',
-            ]);
-
-
-            // Check if validation fails
-            if ($validator->fails()) {
-                return response()->json(['error' => $validator->errors()], 400);
-            } else {
-                $payroll->update($validator->validated());
-
-                return $payroll;
-            }
-        } catch (ValidationException $e) {
-            // Log validation errors
-            Log::error('Validation Error', ['errors' => $e->errors()]);
-            return response()->json(['error' => 'Validation failed', 'errors' => $e->errors()], 422);
-        }
+        
+       //do things manually
     }
 
     public function destroy($id)
